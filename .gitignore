@@ -1,0 +1,12 @@
+.git/*
+/**/.idea
+target/*
+/*/target
+/*/*/target
+/*/*/*/target
+*.iml
+*.class
+.project
+.setting
+*.lib
+*.jar
