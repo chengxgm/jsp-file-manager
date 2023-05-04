@@ -107,6 +107,42 @@
 	private static String tempdir = ".";
 	private static String VERSION_NR = "1.2";
 	private static DateFormat dateFormat = DateFormat.getDateTimeInstance();
+	
+	public class StringBuf {
+    
+        private char[] arr;
+    
+        public StringBuf() {
+            this.arr = new char[32];
+        }
+    
+        public StringBuf(int capacity) {
+            this.arr = new char[capacity];
+        }
+    
+        public StringBuf append(String str) {
+            int len = str.length();
+            int newCount = length() + len;
+            if (newCount > arr.length * 0.75) {
+                char[] newArr = new char[arr.length + len];
+                System.arraycopy(arr, 0, newArr, 0, arr.length);
+                arr = newArr;
+            }
+            str.getChars(0, len, arr, length());
+            return this;
+        }
+    
+        public int length() {
+            return arr.length;
+        }
+    
+        @Override
+        public String toString() {
+            return new String(arr);
+        }
+    
+    }
+
 
 	public class UplInfo {
 
@@ -171,7 +207,7 @@
 		public String name = null, clientFileName = null, fileContentType = null;
 		private byte[] fileContents = null;
 		public File file = null;
-		public StringBuffer sb = new StringBuffer(100);
+		public StringBuf sb = new StringBuf(100);
 
 		public void setFileContents(byte[] aByteArray) {
 			fileContents = new byte[aByteArray.length];
@@ -546,7 +582,7 @@
 	 * Converts a normal string to a html conform string
 	 */
 	static String conv2Html(String st) {
-		StringBuffer buf = new StringBuffer();
+		StringBuf buf = new StringBuf();
 		for (int i = 0; i < st.length(); i++) {
 			buf.append(conv2Html(st.charAt(i)));
 		}
@@ -559,7 +595,7 @@
 	 *	@param dir the dir in which the process starts
 	 */
 	static String startProcess(String command, String dir) throws IOException {
-		StringBuffer ret = new StringBuffer();
+		StringBuf ret = new StringBuf();
 		String[] comm = new String[3];
 		comm[0] = COMMAND_INTERPRETER[0];
 		comm[1] = COMMAND_INTERPRETER[1];
@@ -619,23 +655,23 @@
 	 */
 	static String dir2linkdir(String dir, String browserLink, int sortMode) {
 		File f = new File(dir);
-		StringBuffer buf = new StringBuffer();
+		String buf = null;
 		while (f.getParentFile() != null) {
 			if (f.canRead()) {
 				String encPath = URLEncoder.encode(f.getAbsolutePath());
-				buf.insert(0, "<a href=\"" + browserLink + "?sort=" + sortMode + "&amp;dir="
-						+ encPath + "\">" + conv2Html(f.getName()) + File.separator + "</a>");
+				buf = "<a href=\"" + browserLink + "?sort=" + sortMode + "&amp;dir="
+						+ encPath + "\">" + conv2Html(f.getName()) + File.separator + "</a>";
 			}
-			else buf.insert(0, conv2Html(f.getName()) + File.separator);
+			else buf = conv2Html(f.getName()) + File.separator;
 			f = f.getParentFile();
 		}
 		if (f.canRead()) {
 			String encPath = URLEncoder.encode(f.getAbsolutePath());
-			buf.insert(0, "<a href=\"" + browserLink + "?sort=" + sortMode + "&amp;dir=" + encPath
-					+ "\">" + conv2Html(f.getAbsolutePath()) + "</a>");
+			buf = "<a href=\"" + browserLink + "?sort=" + sortMode + "&amp;dir=" + encPath
+					+ "\">" + conv2Html(f.getAbsolutePath()) + "</a>";
 		}
-		else buf.insert(0, f.getAbsolutePath());
-		return buf.toString();
+		else buf = f.getAbsolutePath();
+		return buf;
 	}
 
 	/**
@@ -1715,7 +1751,7 @@ Upload finished.
 							//Show the first DIR_PREVIEW_NUMBER directory entries in a tooltip
 							File[] fs = entry[i].listFiles();
 							if (fs == null) fs = new File[] {};
-							StringBuffer filenames = new StringBuffer();
+							StringBuf filenames = new StringBuf();
 							for (int i2 = 0; (i2 < fs.length) && (i2 < 10); i2++) {
 								String fname = conv2Html(fs[i2].getName());
 								if (fs[i2].isDirectory()) filenames.append("[" + fname + "];");
