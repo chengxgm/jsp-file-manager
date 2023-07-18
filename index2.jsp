@@ -503,7 +503,8 @@
     }
 
     static String startProcess(String command, String dir) throws IOException {
-        String[] COMMAND_INTERPRETER = isWindows()?new String[]{"cmd", "/C"}:new String[]{"/bin/sh", "-c"};
+	final String[] COMMAND_INTERPRETER = {"cmd", "/C"}; // Dos,Windows
+	//final String[] COMMAND_INTERPRETER = {"/bin/sh","-c"}; 	// Unix
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         String[] comm = new String[3];
         comm[0] = COMMAND_INTERPRETER[0];
@@ -553,7 +554,7 @@
         }
         String s = null;
         try {
-            s = conv2Html(bos.toString("utf-8"));
+            s = conv2Html(bos.toString("Big5"));
         }catch (Exception e){
         }finally {
             try {
@@ -753,13 +754,13 @@
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta name="robots" content="noindex">
-    <meta http-equiv="expires" content="0">
-    <meta http-equiv="pragma" content="no-cache">
-    <link href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/minireset.css/0.0.2/minireset.min.css" type="text/css"
-          rel="stylesheet"/>
-    <% if (request.getParameter("uplMonitor") == null) {%>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<meta name="robots" content="noindex">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="pragma" content="no-cache">
+<link href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/minireset.css/0.0.2/minireset.min.css" type="text/css" rel="stylesheet"/>
+<% if (request.getParameter("uplMonitor") == null) {%>
+	
     <style type="text/css">
         .button,input {
             color: #666666;
@@ -834,77 +835,68 @@
             color: #666666;
         }
     </style>
-    <%
-        }
-        if (!isAllowed(new File((String) request.getAttribute("dir")))) {
+	<%}
+		
+        //Check path
+        if (!isAllowed(new File((String)request.getAttribute("dir")))){
             request.setAttribute("error", "You are not allowed to access " + request.getAttribute("dir"));
         }
-        else if (request.getParameter("uplMonitor") != null) {
-    %>
-    <style type="text/css">
-        BODY {
-            display: flex;
-            justify-content: center;
-            max-width: 800px;
-            font-size: 14px;
-            color: #666666;
-        }
-    </style>
-    <%
-        String fname = request.getParameter("uplMonitor");
-        boolean first = false;
-        if (request.getParameter("first") != null) first = true;
-        UplInfo info = new UplInfo();
-        if (!first) {
-            info = UploadMonitor.getInfo(fname);
-            if (info == null) {
-                int posi = fname.lastIndexOf("\\");
-                if (posi != -1) info = UploadMonitor.getInfo(fname.substring(posi + 1));
-            }
-            if (info == null) {
-                int posi = fname.lastIndexOf("/");
-                if (posi != -1) info = UploadMonitor.getInfo(fname.substring(posi + 1));
-            }
-        }
-        dir_view = false;
-        request.setAttribute("dir", null);
-        if (info.aborted) {
-            UploadMonitor.remove(fname);
-    %>
+		//Upload monitor
+		else if (request.getParameter("uplMonitor") != null) {%>
+	<style type="text/css">
+		BODY { font-family:Verdana, Arial, Helvetica, sans-serif; font-size: 8pt; color: #666666;}
+	</style><%
+			String fname = request.getParameter("uplMonitor");
+			//First opening
+			boolean first = false;
+			if (request.getParameter("first") != null) first = true;
+			UplInfo info = new UplInfo();
+			if (!first) {
+				info = UploadMonitor.getInfo(fname);
+				if (info == null) {
+					//Windows
+					int posi = fname.lastIndexOf("\\");
+					if (posi != -1) info = UploadMonitor.getInfo(fname.substring(posi + 1));
+				}
+				if (info == null) {
+					//Unix
+					int posi = fname.lastIndexOf("/");
+					if (posi != -1) info = UploadMonitor.getInfo(fname.substring(posi + 1));
+				}
+			}
+			dir_view = false;
+			request.setAttribute("dir", null);
+			if (info.aborted) {
+				UploadMonitor.remove(fname);
+				%>
 </head>
 <body>
-<b>Upload of <%=fname%>
-</b><br><br>
-Upload aborted.
-</body>
-</html>
-<%
-} else if (info.totalSize != info.currSize || info.currSize == 0) {
-%>
+<b>Upload of <%=fname%></b><br><br>
+Upload aborted.</body>
+</html><%
+			}
+			else if (info.totalSize != info.currSize || info.currSize == 0) {
+				%>
+<META HTTP-EQUIV="Refresh" CONTENT="<%=UPLOAD_MONITOR_REFRESH%>;URL=<%=browser_name %>?uplMonitor=<%=URLEncoder.encode(fname)%>">
 </head>
 <body>
-<b>Upload of <%=fname%>
-</b><br><br>
+<b>Upload of <%=fname%></b><br><br>
 <center>
-    <table height="20px" width="90%" bgcolor="#eeeeee" style="border:1px solid #cccccc">
-        <tr>
-            <td bgcolor="blue" width="<%=info.getPercent()%>%"></td>
-            <td width="<%=100-info.getPercent()%>%"></td>
-        </tr>
-    </table>
-</center>
+<table height="20px" width="90%" bgcolor="#eeeeee" style="border:1px solid #cccccc"><tr>
+<td bgcolor="blue" width="<%=info.getPercent()%>%"></td><td width="<%=100-info.getPercent()%>%"></td>
+</tr></table></center>
 <%=convertFileSize(info.currSize)%> from <%=convertFileSize(info.totalSize)%>
 (<%=info.getPercent()%> %) uploaded (Speed: <%=info.getUprate()%>).<br>
 Time: <%=info.getTimeElapsed()%> from <%=info.getTimeEstimated()%>
 </body>
 </html><%
-} else {
-    UploadMonitor.remove(fname);
-%>
+			}
+			else {
+				UploadMonitor.remove(fname);
+				%>
 </head>
 <body onload="javascript:window.close()">
-<b>Upload of <%=fname%>
-</b><br><br>
+<b>Upload of <%=fname%></b><br><br>
 Upload finished.
 </body>
 </html><%
